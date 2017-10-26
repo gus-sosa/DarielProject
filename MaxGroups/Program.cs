@@ -39,6 +39,7 @@ namespace MaxGroups
             var seed = new BitArray(matrix.GetLength(0), true);
             var marks = new bool[seed.Count];
             queue.Enqueue(seed);
+            dict.Add(seed);
             var result = new HashSet<BitArray>();
             while (queue.Count > 0)
             {
@@ -52,19 +53,26 @@ namespace MaxGroups
                             var num1 = new BitArray(currentSet);
                             num1[i] = false;
                             if (!dict.Contains(num1))
+                            {
                                 queue.Enqueue(num1);
+                                dict.Add(num1);
+                            }
                             var num2 = new BitArray(currentSet);
                             num2[j] = false;
                             if (!dict.Contains(num2))
+                            {
                                 queue.Enqueue(num2);
+                                dict.Add(num2);
+                            }
                         }
 
-                if (flag && !result.Contains(currentSet) && AllAreMarked(currentSet, marks))
+                if (flag && !result.Contains(currentSet) && !AllAreMarked(currentSet, marks))
                 {
                     result.Add(currentSet);
 
                     for (int i = 0; i < currentSet.Length; i++)
-                        marks[i] = !marks[i] && currentSet[i];
+                        if (!marks[i])
+                            marks[i] = currentSet[i];
                 }
             }
 
