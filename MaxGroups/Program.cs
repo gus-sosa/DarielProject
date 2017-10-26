@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -33,60 +34,58 @@ namespace MaxGroups
 
         private static List<List<int>> GetMaxGroups(bool[,] matrix)
         {
-            var result = new List<List<int>>();
-            var queue = new Queue<List<int>>();
-            int? lengthMax = null;
-            bool[] marks = new bool[matrix.GetLength(0)];
-            int numNoMarks = marks.Length;
-            //seeding
-            queue.Enqueue(Enumerable.Range(0, matrix.GetLength(0)).ToList());
-            while (queue.Count > 0 && numNoMarks > 0)
+            var queue = new Queue<BitArray>();
+            var dict = new HashSet<BitArray>();
+            var seed = new BitArray(matrix.GetLength(0), true);
+            var marks = new bool[seed.Count];
+            queue.Enqueue(seed);
+            var result = new HashSet<BitArray>();
+            while (queue.Count > 0)
             {
-                var currentList = queue.Dequeue();
-                bool flag = true;
-                for (int i = 0; i < currentList.Count; i++)
-                    for (int j = i + 1; j < currentList.Count; j++)
-                    {
-                        int firstIndex = currentList[i];
-                        int secondIndex = currentList[j];
-                        if (!matrix[firstIndex, secondIndex])
+                var currentSet = queue.Dequeue();
+                var flag = true;
+                for (int i = 0; i < currentSet.Count - 1; i++)
+                    for (int j = i + 1; currentSet[i] && j < currentSet.Count; j++)
+                        if (currentSet[j] && !matrix[i, j])
                         {
                             flag = false;
-                            queue.Enqueue(currentList.Where(ind => ind != firstIndex).ToList());
-                            queue.Enqueue(currentList.Where(ind => ind != secondIndex).ToList());
+                            var num1 = new BitArray(currentSet);
+                            num1[i] = false;
+                            if (!dict.Contains(num1))
+                                queue.Enqueue(num1);
+                            var num2 = new BitArray(currentSet);
+                            num2[j] = false;
+                            if (!dict.Contains(num2))
+                                queue.Enqueue(num2);
                         }
-                    }
 
-                if (lengthMax.HasValue && currentList.Count != lengthMax)
-                    break;
-
-
-                if (flag)
+                if (flag && !result.Contains(currentSet) && AllAreMarked(currentSet, marks))
                 {
-                    lengthMax = currentList.Count;
-                    if (IncludeInResult(currentList, marks))
-                    {
-                        result.Add(currentList);
-                        foreach (var item in currentList)
-                        {
-                            if (!marks[item])
-                            {
-                                marks[item] = true;
-                                numNoMarks--;
-                            }
-                        }
-                    }
+                    result.Add(currentSet);
+
+                    for (int i = 0; i < currentSet.Length; i++)
+                        marks[i] = !marks[i] && currentSet[i];
                 }
             }
-            return result;
+
+            var list2 = new List<List<int>>();
+            foreach (var item in result)
+            {
+                var list = new List<int>();
+                for (int i = 0; i < item.Length; i++)
+                    if (item[i])
+                        list.Add(i);
+                list2.Add(list);
+            }
+            return list2;
         }
 
-        private static bool IncludeInResult(List<int> currentList, bool[] marks)
+        private static bool AllAreMarked(BitArray currentSet, bool[] marks)
         {
-            foreach (var item in currentList)
-                if (!marks[item])
-                    return true;
-            return false;
+            for (int i = 0; i < currentSet.Length; i++)
+                if (currentSet[i] && !marks[i])
+                    return false;
+            return true;
         }
     }
 }
